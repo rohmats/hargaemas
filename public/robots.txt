@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://api-public-two.vercel.app
+
+# Sitemaps
+Sitemap: https://api-public-two.vercel.app/sitemap.xml

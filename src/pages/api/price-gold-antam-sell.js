@@ -55,13 +55,36 @@ export default async function handler(req, res) {
     //   throw new Error("Token not found");
     // }
 
-    const jsonUrl = `https://www.logammulia.com/data-base-price/gold/sell/?_token=${scriptContent}`;
+    const jsonUrl = `https://logammulia.com/data-base-price/gold_eai/sell?_token=${scriptContent}&transition=1`;
     const jsonResponse = await fetch(jsonUrl, {
       headers: {
         Cookie: `XSRF-TOKEN=${xsrfToken}; logammulia_session=${logammuliaSession}`,
         "X-XSRF-TOKEN": xsrfToken,
       },
     });
+
+    const contentType = jsonResponse.headers.get("content-type") || "";
+    if (!jsonResponse.ok) {
+      const bodyText = await jsonResponse.text();
+      console.error("JSON fetch failed", { status: jsonResponse.status, contentType, bodySnippet: bodyText.slice(0, 1000) });
+      throw new Error(`JSON fetch failed with status ${jsonResponse.status}`);
+    }
+
+    if (!contentType.includes("application/json")) {
+      const bodyText = await jsonResponse.text();
+      console.error("Expected JSON but received non-JSON response", {
+        status: jsonResponse.status,
+        contentType,
+        bodySnippet: bodyText.slice(0, 1000),
+      });
+
+      try {
+        const maybeJson = JSON.parse(bodyText);
+        return res.status(200).json(maybeJson);
+      } catch (err) {
+        throw new Error("Expected JSON but received HTML or other non-JSON response from data endpoint");
+      }
+    }
 
     const goldData = await jsonResponse.json();
     res.status(200).json(goldData);

@@ -54,6 +54,29 @@ export default async function handler(req, res) {
       },
     });
 
+    const contentType = jsonResponse.headers.get("content-type") || "";
+    if (!jsonResponse.ok) {
+      const bodyText = await jsonResponse.text();
+      console.error("JSON fetch failed", { status: jsonResponse.status, contentType, bodySnippet: bodyText.slice(0, 1000) });
+      throw new Error(`JSON fetch failed with status ${jsonResponse.status}`);
+    }
+
+    if (!contentType.includes("application/json")) {
+      const bodyText = await jsonResponse.text();
+      console.error("Expected JSON but received non-JSON response", {
+        status: jsonResponse.status,
+        contentType,
+        bodySnippet: bodyText.slice(0, 1000),
+      });
+
+      try {
+        const maybeJson = JSON.parse(bodyText);
+        return res.status(200).json(maybeJson);
+      } catch (err) {
+        throw new Error("Expected JSON but received HTML or other non-JSON response from data endpoint");
+      }
+    }
+
     const goldData = await jsonResponse.json();
     res.status(200).json(goldData);
   } catch (error) {
